@@ -1,335 +1,182 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-class ResidualBlock(nn.Module):
-    def __init__(self, input_size, hidden_size,drop=0.1):
-        super(ResidualBlock, self).__init__()
 
-        self.input_norm1 = nn.LayerNorm(hidden_size)
-        self.prefc1 = nn.Linear(input_size, hidden_size)
-        self.dropout1 = nn.Dropout(drop)
-        self.act1 = nn.PReLU(num_parameters=1, init=0.25)
-        self.act2 = nn.PReLU(num_parameters=1, init=0.25)
-        self.prefc2 = nn.Linear(hidden_size, input_size)
-        self.input_norm2 = nn.LayerNorm(input_size)
-        self.dropout2 = nn.Dropout(drop)
 
-    def forward(self, x):
-        out = self.prefc1(x)
-        out = self.input_norm1(out)
-        out = self.act1 (out)
-        out =x+self.dropout1(out)
-        x = out
-        out = self.prefc2(out)
-        out = self.input_norm2(out)
-        out = self.act2(out)
-        out = x + self.dropout2(out)
-        return out
+class encoarModel(torch.nn.Module):
 
-class skipBlock(nn.Module):
-    def __init__(self, input_size, hidden_size,drop=0.1):
-        super(skipBlock, self).__init__()
-
-        self.input_norm1 = nn.LayerNorm(hidden_size)
-        self.prefc1 = nn.Linear(input_size, hidden_size)
-        self.dropout1 = nn.Dropout(drop)
-        self.act1 = nn.PReLU(num_parameters=1, init=0.25)
-        self.act2 = nn.PReLU(num_parameters=1, init=0.25)
-        self.prefc2 = nn.Linear(hidden_size, input_size)
-        self.input_norm2 = nn.LayerNorm(input_size)
-        self.dropout2 = nn.Dropout(drop)
-
-    def forward(self, x):
-
-        out = self.prefc1(x)
-        out = self.input_norm1(out)
-        out = self.act1 (out)
-        out =self.dropout1(out)
-
-        out = self.prefc2(out)
-        out = self.input_norm2(out)
-        out = self.act2(out)
-        out = x + self.dropout2(out)
-        return out
-
-class nonemaxModel(torch.nn.Module):
-
-    def __init__(self,num_blocks,drop=0.1,input_size =6,sample_num=297, output_size =200,classnum=100):
+    def __init__(self, num_blocks, drop=0.1, input_size=6, output_size=200, classnum=100):
         super().__init__()
 
-        super().__init__()
-        self.input_size = input_size
-
-        self.hideen_size1 = 16
-
-
-        self.hideen_size4 = 32
-        self.hideen_size5 = 64
-
-        self.hideen_size6 = self.hideen_size5*sample_num
-
-        self.act1 = nn.PReLU(num_parameters=1, init=0.25)
-
-        self.input_norm1 = nn.LayerNorm(self.hideen_size1)
-
-        self.input_norm3 = nn.LayerNorm(self.hideen_size4)
-        self.input_norm4 = nn.LayerNorm(self.hideen_size5)
-
-        self.localfc1 = nn.Linear(self.input_size, self.hideen_size1)
-
-        self.globalfc1 = nn.Linear(self.hideen_size1, self.hideen_size4)
-        self.globalfc2 = nn.Linear(self.hideen_size4, self.hideen_size5)
-
-
-        # self.layers = nn.ModuleList()
-        #
-        # for _ in range(num_blocks):
-        #     self.layers.append(ResidualBlock(self.hideen_size6,self.hideen_size6))
-
-        # self.pre_linear1 = nn.Linear(self.hideen_size6,self.hideen_size6)
-        # self.preinput_norm1 = nn.LayerNorm(self.hideen_size6)
-        # self.dropout1 = nn.Dropout(drop)
-
-        self.pre_linear2 = nn.Linear(self.hideen_size6, output_size*classnum)
-
-    def forward(self, x):
-
-        x = self.localfc1(x)
-        x = self.input_norm1(x)
-        x = self.act1(x)
-
-
-        x = self.globalfc1(x)
-        x = self.input_norm3(x)
-        x = self.act1(x)
-
-        x = self.globalfc2(x)
-        x = self.input_norm4(x)
-        x = self.act1(x)
-        x = x.reshape(x.size(0),-1)
-        # x = torch.max(x, 1)[0]
-
-
-        # for layer in self.layers:
-        #     x = layer(x)  # 通过所有的残差层
-
-        # x = self.pre_linear1(x)
-        # x = self.preinput_norm1(x)
-        # x = self.act1(x)
-        # x = self.dropout1(x)
-        x = self.pre_linear2(x)  # 最后输出
-        return x
-
-
-class preModel(torch.nn.Module):
-
-    def __init__(self,num_blocks,drop=0.1,input_size =6, output_size =200,classnum=100):
-        super().__init__()
-
-        super().__init__()
         self.input_size = input_size
 
         self.hideen_size1 = 32
         self.hideen_size4 = 128
-        self.hideen_size5 = 256
-        self.hideen_size6 = self.hideen_size5*2
+        self.hideen_size5 = 512
 
-        self.act1 = nn.PReLU(num_parameters=1, init=0.25)
-        self.act2 = nn.PReLU(num_parameters=1, init=0.25)
-        self.act3 = nn.PReLU(num_parameters=1, init=0.25)
+        self.act1 = nn.ReLU()
 
         self.input_norm1 = nn.LayerNorm(self.hideen_size1)
 
-        self.input_norm3 = nn.LayerNorm(self.hideen_size4)
-        self.input_norm4 = nn.LayerNorm(self.hideen_size5)
+        self.input_norm2 = nn.LayerNorm(self.hideen_size4)
+        self.input_norm3 = nn.LayerNorm(self.hideen_size5)
 
         self.localfc1 = nn.Linear(self.input_size, self.hideen_size1)
 
         self.globalfc1 = nn.Linear(self.hideen_size1, self.hideen_size4)
         self.globalfc2 = nn.Linear(self.hideen_size4, self.hideen_size5)
 
+        self.votrapos = nn.Linear(297, 64)
+        # self.kntrapos = nn.Linear(297,8)
 
-        self.layers = nn.ModuleList()
+        # self.positional_encoding = PositionalEncoding(self.hideen_size5)
+        self.encoder1 = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(self.hideen_size5, 1, self.hideen_size5, drop, batch_first=True,
+                                       activation='gelu'),
+            num_layers=num_blocks,
+        )
+        # self.encoder2 = nn.TransformerEncoder(
+        #     nn.TransformerEncoderLayer(self.hideen_size5, 1, self.hideen_size5, drop,batch_first=True,activation='gelu'),
+        #     num_layers=num_blocks//4,
+        # )
+        #
+        # self.kn_norm = nn.LayerNorm(self.hideen_size5)
+        # self.kn_linear = nn.Linear(self.hideen_size5, 1)
 
-        for _ in range(num_blocks):
-            self.layers.append(ResidualBlock(self.hideen_size6,self.hideen_size6))
-
-        # self.pre_linear1 = nn.Linear(self.hideen_size5,self.hideen_size5)
-        # self.preinput_norm1 = nn.LayerNorm(self.hideen_size5)
         self.dropout1 = nn.Dropout(drop)
+        self.norm = nn.LayerNorm(self.hideen_size5)
 
-        self.pre_linear2 = nn.Linear(self.hideen_size6, output_size*classnum)
+        self.vo_linear = nn.Linear(self.hideen_size5, 3 * classnum)
 
-    def forward(self, x):
-
+    def forward(self, x, dx):
         x = self.localfc1(x)
         x = self.input_norm1(x)
         x = self.act1(x)
 
-
         x = self.globalfc1(x)
-        x = self.input_norm3(x)
-        x = self.act2(x)
+        x = self.input_norm2(x)
+        x = self.act1(x)
 
         x = self.globalfc2(x)
-        x = self.input_norm4(x)
-        x = self.act3(x)
+        x = self.input_norm3(x)
+        x = self.act1(x)
 
-        max_x = torch.max(x, 1)[0]
-        min_x = torch.min(x, 1)[0]
-        x = torch.cat((max_x,min_x),1)
+        dc = self.localfc1(dx)
+        dc = self.input_norm1(dc)
+        dc = self.act1(dc)
 
-        for layer in self.layers:
-            x = layer(x)  # 通过所有的残差层
+        dc = self.globalfc1(dc)
+        dc = self.input_norm2(dc)
+        dc = self.act1(dc)
 
-        # x = self.pre_linear1(x)
-        # x = self.preinput_norm1(x)
-        # x = self.act1(x)
-        x = self.dropout1(x)
-        x = self.pre_linear2(x)  # 最后输出
-        return x
+        dc = self.globalfc2(dc)
+        dc = self.input_norm3(dc)
+        dc = self.act1(dc)
+
+        vx = x
+
+        lx = x.transpose(1, 2)
+        vox = self.votrapos(lx)
+        vox = vox.transpose(1, 2)
+
+        vox = self.encoder1(vox)
+        vox = self.dropout1(vox)
+        #
+        # knx = self.encoder2(knx)
+        # knx = self.dropout1(knx)
+
+        vox = self.norm(vox)
+        vox = self.vo_linear(vox)
+
+        # knx = self.kn_norm(knx)
+        # knx = self.kn_linear(knx)
+        # knx = knx.squeeze(-1)
+        return vox, vx
+
+    def pre(self, tgt):
+        tgt = self.localfc1(tgt)
+        tgt = self.input_norm1(tgt)
+        tgt = self.act1(tgt)
+
+        tgt = self.globalfc1(tgt)
+        tgt = self.input_norm2(tgt)
+        tgt = self.act1(tgt)
+
+        tgt = self.globalfc2(tgt)
+        tgt = self.input_norm3(tgt)
+        tgt = self.act1(tgt)
+
+        return tgt
 
 
-class wiseModel(torch.nn.Module):
 
-    def __init__(self,num_blocks,drop=0.1,input_size =6, output_size =200,classnum=100):
-        super().__init__()
+class TransformerModelvo(nn.Module):
+    def __init__(self, input_size, output_size, d_model, nhead, num_layers, dim_feedforward,num_blocks, dropout=0.0,device='cuda'):
+        super(TransformerModelvo, self).__init__()
 
-        super().__init__()
-        self.input_size = input_size
-
-        self.hideen_size1 = 256
-        self.hideen_size4 = 128*4
-        self.hideen_size5 = 512*4
-        self.hideen_size6 = self.hideen_size5
-
-        self.act1 = nn.PReLU(num_parameters=1, init=0.25)
-        self.act2 = nn.PReLU(num_parameters=1, init=0.25)
-        self.act3 = nn.PReLU(num_parameters=1, init=0.25)
-
-        self.input_norm1 = nn.LayerNorm(self.hideen_size1)
-
-        self.input_norm3 = nn.LayerNorm(self.hideen_size4)
-        self.input_norm4 = nn.LayerNorm(self.hideen_size5)
-
-        self.localfc1 = nn.Linear(self.input_size, self.hideen_size1)
-
-        self.globalfc1 = nn.Linear(self.hideen_size1, self.hideen_size4)
-        self.globalfc2 = nn.Linear(self.hideen_size4, self.hideen_size5)
-
-
+        self.decoder = nn.TransformerDecoder(
+            nn.TransformerDecoderLayer(d_model, nhead, dim_feedforward, dropout,batch_first=True),
+            num_layers=1
+        )
+        self.encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout,batch_first=True,activation='gelu'),
+            num_layers=num_layers,
+        )
         # self.layers = nn.ModuleList()
         #
-        # for _ in range(num_blocks):
-        #     self.layers.append(ResidualBlock(self.hideen_size6,self.hideen_size6))
+        # for _ in range(num_layers):
+        #     self.layers.append(ResidualBlock(d_model*2,d_model*2))
 
-        # self.pre_linear1 = nn.Linear(self.hideen_size5,self.hideen_size5)
-        # self.preinput_norm1 = nn.LayerNorm(self.hideen_size5)
-        self.dropout1 = nn.Dropout(drop)
-
-        self.pre_linear2 = nn.Linear(self.hideen_size6, output_size*classnum)
-
-    def forward(self, x):
-
-        x = self.localfc1(x)
-        x = self.input_norm1(x)
-        x = self.act1(x)
-        x = self.dropout1(x)
+        # self.positional_encoding = PositionalEncoding(d_model, dropout=0)
 
 
-        x = self.globalfc1(x)
-        x = self.input_norm3(x)
-        x = self.act2(x)
-        x = self.dropout1(x)
-
-        x = self.globalfc2(x)
-        x = self.input_norm4(x)
-        x = self.act3(x)
-
-        x = torch.max(x, 1)[0]
-        # min_x = torch.min(x, 1)[0]
-        # x = torch.cat((max_x,min_x),1)
-
-        x = self.dropout1(x)
-        x = self.pre_linear2(x)  # 最后输出
-        return x
-
-class tranModel(torch.nn.Module):
-
-    def __init__(self,num_blocks,drop=0.1,input_size =6, output_size =200,classnum=100):
-        super().__init__()
-
-        self.input_size = input_size
-
-        self.hideen_size1 = 32
-        self.hideen_size4 = 64
-        self.hideen_size5 = 512
-        self.hideen_size6 = self.hideen_size5+self.hideen_size4+self.hideen_size1
-
-        self.act1 = nn.PReLU(num_parameters=1, init=0.25)
-        self.act2 = nn.PReLU(num_parameters=1, init=0.25)
-        self.act3 = nn.PReLU(num_parameters=1, init=0.25)
-
-        self.input_norm1 = nn.LayerNorm(self.hideen_size1)
-
-        self.input_norm3 = nn.LayerNorm(self.hideen_size4)
-        self.input_norm4 = nn.LayerNorm(self.hideen_size5)
-
-        self.localfc1 = nn.Linear(self.input_size, self.hideen_size1)
-
-        self.globalfc1 = nn.Linear(self.hideen_size1, self.hideen_size4)
-        self.globalfc2 = nn.Linear(self.hideen_size4, self.hideen_size5)
+        self.device = device
+        self.dropout = nn.Dropout(dropout)
+        self.fc_out = nn.Linear(d_model, output_size*100)
 
 
-        self.layers1 = nn.ModuleList()
-        self.layers2 = nn.ModuleList()
-        self.layers3 = nn.ModuleList()
+    def forward(self, tgt_emb,src_emb):
 
-        for _ in range(num_blocks):
-            self.layers1.append(ResidualBlock(self.hideen_size1,self.hideen_size1))
-            self.layers2.append(ResidualBlock(self.hideen_size4, self.hideen_size4))
-            self.layers3.append(ResidualBlock(self.hideen_size5, self.hideen_size5))
+        # scores = torch.matmul(tgt, src.transpose(1, 2)) / torch.sqrt(torch.tensor(3, dtype=torch.float32))
+        #
+        # # 计算注意力权重（softmax归一化）
+        # attention_weights = F.softmax(scores, dim=-1)  # [B, Q, K]
+        #
+        # # 加权求和得到输出: [B, Q, K] × [B, K, V] → [B, Q, V]
+        # decoded_tgt = torch.matmul(attention_weights, src_emb)
+        decoded_tgt = self.decoder(tgt_emb, src_emb)  # (tgt_len, batch_size, d_model)
+        #
+        # decoded_tgt = tgt_emb -decoded_tgt
 
-        self.dropout1 = nn.Dropout(drop)
-        self.dropout2 = nn.Dropout(drop)
-        self.dropout1 = nn.Dropout(drop)
+        decoded_tgt = self.encoder(decoded_tgt)
+        # x = torch.cat((tgt_emb, decoded_tgt), 2)
+        # for layer in self.layers:
+        #     x = layer(x)
+        decoded_tgt = self.dropout(decoded_tgt)
 
-        self.knot_linear = nn.Linear(self.hideen_size1, 8)
-        self.vo_linear = nn.Linear(self.hideen_size6, output_size*classnum)
-
-    def forward(self, x):
-
-        x = self.localfc1(x)
-        x = self.input_norm1(x)
-        x = self.act1(x)
-        max1 = torch.max(x, 1)[0]
+        output = self.fc_out(decoded_tgt)  # (tgt_len, batch_size, output_dim)
+        return output
 
 
-        x = self.globalfc1(x)
-        x = self.input_norm3(x)
-        x = self.act2(x)
-        max2 = torch.max(x, 1)[0]
-
-        x = self.globalfc2(x)
-        x = self.input_norm4(x)
-        x = self.act3(x)
-
-        max3 = torch.max(x, 1)[0]
-
-        for block in  range(len(self.layers1)):
-            max1 = self.layers1[block](max1)
-            max2 = self.layers2[block](max2)
-            max3 = self.layers3[block](max3)
-
-        max1 = self.dropout1(max1)
-        max2 = self.dropout1(max2)
-        max3 = self.dropout1(max3)
-
-        knotfea = max1
-        x = torch.cat((max1,max2,max3),1)
-
-        knotfea = self.knot_linear(knotfea)
-        vofea = self.vo_linear(x)
-        return knotfea,vofea
+    def predict(self,src,tgt):
+        src_emb = self.embedding(src)  # (batch_size, src_len, d_model)
+        otgt = tgt
+        coarpov = tgt
+        for i in range(64):
+            tgt = otgt
+            tgt_emb = self.embedding(tgt)
+            tgt_emb = self.positional_encoding(tgt_emb)
+            decoded_tgt = self.decoder(tgt_emb, src_emb)
+            output = self.fc_out(decoded_tgt)
+            output = output[:,-1,:]
+            coarpo = output.reshape(3,100)
+            coarpo = F.softmax(coarpo,dim=-1)
+            coarpov = torch.argmax(coarpo, 1, keepdim=False)
+            coarpov = coarpov*0.01+0.005
+            coarpov =  coarpov.unsqueeze(0)
+            coarpov = coarpov.unsqueeze(0)
+            otgt = torch.cat((otgt,coarpov),1)
+        output = otgt[:,1:,:]
+        return output
 
 
