@@ -10,5 +10,8 @@ python g1.py
 
 Step 3. Train the model:
 ```
-python trainall.py --batch_size 128 --lr 1e-3
+python trainpre.py --batch_size 128 --lr 1e-4
+
+
+python trainrefine.py  --batch_size 128 --lr 1e-4
 ```
