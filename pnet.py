@@ -26,27 +26,28 @@ class encoarModel(torch.nn.Module):
         self.globalfc1 = nn.Linear(self.hideen_size1, self.hideen_size4)
         self.globalfc2 = nn.Linear(self.hideen_size4, self.hideen_size5)
 
-        self.votrapos = nn.Linear(297, 64)
-        # self.kntrapos = nn.Linear(297,8)
+        self.votrapos = nn.Linear(296, 64)
+        self.kopos = nn.Linear(296, 4)
 
-        # self.positional_encoding = PositionalEncoding(self.hideen_size5)
-        self.encoder1 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(self.hideen_size5, 1, self.hideen_size5, drop, batch_first=True,
+        self.pointencoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(self.hideen_size5, 4, self.hideen_size5, 0.0, batch_first=True,
                                        activation='gelu'),
             num_layers=num_blocks,
         )
-        # self.encoder2 = nn.TransformerEncoder(
-        #     nn.TransformerEncoderLayer(self.hideen_size5, 1, self.hideen_size5, drop,batch_first=True,activation='gelu'),
-        #     num_layers=num_blocks//4,
-        # )
-        #
-        # self.kn_norm = nn.LayerNorm(self.hideen_size5)
-        # self.kn_linear = nn.Linear(self.hideen_size5, 1)
+
+        self.knotencoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(self.hideen_size5, 4, self.hideen_size5, 0.0, batch_first=True,
+                                       activation='gelu'),
+            num_layers=num_blocks,
+        )
+
 
         self.dropout1 = nn.Dropout(drop)
-        self.norm = nn.LayerNorm(self.hideen_size5)
-
+        self.vnorm = nn.LayerNorm(self.hideen_size5)
         self.vo_linear = nn.Linear(self.hideen_size5, 3 * classnum)
+
+        self.knorm = nn.LayerNorm(self.hideen_size5)
+        self.kn_linear = nn.Linear(self.hideen_size5, 1)
 
     def forward(self, x, dx):
         x = self.localfc1(x)
@@ -61,37 +62,29 @@ class encoarModel(torch.nn.Module):
         x = self.input_norm3(x)
         x = self.act1(x)
 
-        dc = self.localfc1(dx)
-        dc = self.input_norm1(dc)
-        dc = self.act1(dc)
-
-        dc = self.globalfc1(dc)
-        dc = self.input_norm2(dc)
-        dc = self.act1(dc)
-
-        dc = self.globalfc2(dc)
-        dc = self.input_norm3(dc)
-        dc = self.act1(dc)
-
         vx = x
 
         lx = x.transpose(1, 2)
         vox = self.votrapos(lx)
         vox = vox.transpose(1, 2)
 
-        vox = self.encoder1(vox)
-        vox = self.dropout1(vox)
-        #
-        # knx = self.encoder2(knx)
-        # knx = self.dropout1(knx)
+        kx = self.kopos(lx)
+        kx = kx.transpose(1, 2)
 
-        vox = self.norm(vox)
+        vox = self.pointencoder(vox)
+        vox = self.dropout1(vox)
+
+        kx = self.pointencoder(kx)
+        kx = self.dropout1(kx)
+
+        vox = self.knorm(vox)
         vox = self.vo_linear(vox)
 
-        # knx = self.kn_norm(knx)
-        # knx = self.kn_linear(knx)
-        # knx = knx.squeeze(-1)
-        return vox, vx
+        kx = self.knorm(kx)
+        kx = self.kn_linear(kx)
+        kx = kx.squeeze(-1)
+
+        return vox, vx,kx
 
     def pre(self, tgt):
         tgt = self.localfc1(tgt)

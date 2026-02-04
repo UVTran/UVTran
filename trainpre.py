@@ -50,7 +50,7 @@ def main(args):
     criterion1 = nn.CrossEntropyLoss()  # 均方误差损失
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, betas=(0.9, 0.999))
 
-    dataset_train = dataprocess.TrainmeanDataset(args.in_path,args.vout_path)
+    dataset_train = dataprocess.TrainvoxelDataset(args.in_path,args.out_path,args.vout_path)
     print(dataset_train.__len__())
     data_loader_train = torch.utils.data.DataLoader(
         dataset_train,
@@ -64,15 +64,16 @@ def main(args):
         # print("step:", epoch)
         losssumpo = 0
         model.train(True)
-        for step, (derivative, vox) in enumerate(data_loader_train):
+        for step, (derivative, point,vox) in enumerate(data_loader_train):
             # print('step', step)
             derivative = derivative.to(device)
+            point = point.to(device)
             voxel = vox.long().to(device)
-            coarpo = model(derivative)
+            coarpo,_,kx = model(derivative)
 
-            # loss1 = criterion(knot,points)
+            loss1 = criterion(kx,point[:,:4])
             loss2 = criterion1(coarpo.reshape(-1,clnum),voxel.reshape(-1))
-            loss = loss2
+            loss = loss2+loss1
             losssumpo +=loss2.item()
             optimizer.zero_grad()
             loss.backward()

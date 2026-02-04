@@ -1,17 +1,42 @@
-Step 1. Install requirements:
+# UV Transformers (UVTran) 
+Pytorch code for paper "**UVTran: Accurate Hole-Filling Parameterization with Transformers**"
+
+![UVTran](img/trannet.png)
+
+
+### 1. Dataset Generation 
+
 ```
-pip install -r requirements.txt
-```
-Step 2. Compile the C++ extension modules:
-```
-cd /datagen
+tar -zxvf 1wcurve.tar.gz
+
+cd datagen
 python g1.py
 ```
 
-Step 3. Train the model:
+### 2. Requirements
+
+Install requirements:
+```
+pip install -r requirements.txt
+```
+
+### 3. Training
+
+**UVTran*
+
 ```
 python trainpre.py --batch_size 128 --lr 1e-4
 
 
 python trainrefine.py  --batch_size 128 --lr 1e-4
+```
+
+
+### 5. Testing
+
+**Test a model on dataset by**
+
+```
+python test.py 
+```
 ```

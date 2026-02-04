@@ -136,7 +136,7 @@ def main(args):
             continue
         pcu.append(uv)
 
-    filenames = os.listdir("../manyface")
+    filenames = os.listdir("../face")
 
     srf = BSpline.Surface()
     srf.degree_u = 3
@@ -168,7 +168,7 @@ def main(args):
             rannum = random.randint(1, 20)
             if rannum==5:
                 testflag = True
-        f = open('../manyface/' + filenames[fiId], encoding='utf-8')
+        f = open('../face/' + filenames[fiId], encoding='utf-8')
         po = []
         x = []
         y = []
